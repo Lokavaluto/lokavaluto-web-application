@@ -37,6 +37,7 @@ import { LokAPI } from "./services/lokapiService"
 import mkGettext from "./services/Gettext"
 import QrCodeService from "@/services/QrCodeService"
 import UseModal from "./services/UseModal"
+import useDropdownMenu from "./services/UseDropdownMenu"
 
 // Components
 
@@ -276,6 +277,67 @@ fetchConfig("config.json").then(async (config: any) => {
     return false
   })
 
+  const exportService = new ExportService(gettext)
+  // Dropdowns
+  const dropdown = useDropdownMenu()
+  dropdown.register((obj: any) => {
+    let items = []
+    if (store.state.lokapi.virtualAccountTree.includes(obj)) {
+      items.push({
+        label: $gettext("Qrcode"),
+        icon: "qrcode",
+        action: () => modal.open("QrCodeModal", { accountId: obj.id }),
+      })
+    }
+    if (
+      store.state.lokapi.virtualAccountTree.includes(obj) &&
+      obj?.safeWalletRecipient &&
+      config?.reconversion
+    ) {
+      items.push({
+        label: "Reconversion",
+        icon: "euro-sign",
+        action: (refreshTransaction: any) =>
+          modal.open("MoneyTransferModal", {
+            account: obj,
+            transactionType: "reconversion",
+            refreshTransaction,
+          }),
+      })
+    }
+    if (obj.walletData && store.state.lokapi.virtualAccountTree.includes(obj)) {
+      items.push({
+        label: "Export wallet",
+        icon: "wallet",
+        action: async () => {
+          const wallet = obj.walletData
+          const mkFilename = (a: any) =>
+            `${a.curr}_${a.backend}_${a.userAccountId.split(":")[1]}.json`
+          const filename = mkFilename(obj)
+          try {
+            if (app.config.globalProperties.$platform !== "web") {
+              await exportService.share(
+                JSON.stringify(wallet, null, 4),
+                filename,
+                $gettext("Wallet export")
+              )
+            } else {
+              await exportService.download(
+                JSON.stringify(wallet, null, 4),
+                filename,
+                "text/dat"
+              )
+            }
+          } catch (err) {
+            throw new UIError("the Wallet could not be downloaded", err)
+          }
+        },
+      })
+    }
+
+    return items
+  })
+
   app.use(store)
   app.use(Loading)
   app.use(gettext)
@@ -291,11 +353,12 @@ fetchConfig("config.json").then(async (config: any) => {
   app.config.globalProperties.$persistentStore = new LocalStore("monujo")
   app.config.globalProperties.$auth = authService
   app.config.globalProperties.$prefs = prefsService
-  app.config.globalProperties.$export = new ExportService(gettext)
+  app.config.globalProperties.$export = exportService
   app.config.globalProperties.$qrCode = new QrCodeService(gettext)
   app.config.globalProperties.$errorHandler = app.config.errorHandler
   app.config.globalProperties.$appInfo = { appName, appVersion }
   app.config.globalProperties.$modal = modal
+  app.config.globalProperties.$dropdownMenu = dropdown
   app.config.globalProperties.$passwordUtils = passwordUtils
   app.config.globalProperties.$platform = Capacitor.getPlatform()
   const unwatch = store.watch(

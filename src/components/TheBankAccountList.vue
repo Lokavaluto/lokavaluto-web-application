@@ -97,7 +97,7 @@
               a?.active && a?._obj?.internalId === account?._obj?.internalId,
           }"
           @accountSelected="$emit('accountSelected', a)"
-          :show-actions="
+          :isAccountSelected="
             a?.active && a._obj.internalId === account?._obj?.internalId
           "
           :account="a"
