@@ -3,7 +3,6 @@
 ///<reference types="@types/node"/>
 
 import { createStore } from "vuex"
-import moment from "moment"
 
 import DatePicker from "../services/DatePicker"
 import { UIError } from "../exception"
@@ -109,9 +108,34 @@ export default async function mkStore(localesConfig: any, gettext: any) {
         "dateFormatLanguage"
       ),
       relativeDateFormat: PoorMansCachedGetter((state: any) => {
-        moment.locale(state.dateFormatLanguage)
+        const locale = state.dateFormatLanguage
+        const rtf = new Intl.RelativeTimeFormat(locale, { numeric: "auto" })
+
         return (date: string): string => {
-          return moment(date).fromNow()
+          const now = new Date()
+          const then = new Date(date)
+          const diffInSeconds = (then.getTime() - now.getTime()) / 1000
+
+          const units: {
+            unit: Intl.RelativeTimeFormatUnit
+            seconds: number
+          }[] = [
+            { unit: "year", seconds: 31536000 },
+            { unit: "month", seconds: 2592000 },
+            { unit: "week", seconds: 604800 },
+            { unit: "day", seconds: 86400 },
+            { unit: "hour", seconds: 3600 },
+            { unit: "minute", seconds: 60 },
+            { unit: "second", seconds: 1 },
+          ]
+
+          for (let { unit, seconds } of units) {
+            const value = Math.round(diffInSeconds / seconds)
+            if (Math.abs(value) >= 1) {
+              return rtf.format(value, unit)
+            }
+          }
+          return rtf.format(0, "second")
         }
       }, "dateFormatLanguage"),
       dateTimeFormat: PoorMansCachedGetter(
