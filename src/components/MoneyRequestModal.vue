@@ -107,15 +107,12 @@
   import { Options, Vue } from "vue-class-component"
   import { mapModuleState } from "@/utils/vuex"
 
-  import Loading from "vue-loading-overlay"
-  import "vue-loading-overlay/dist/css/index.css"
   import QrCodeVue from "qrcode.vue"
   import MoneyTransaction from "@/components/MoneyTransaction.vue"
 
   @Options({
     name: "MoneyRequestModal",
     components: {
-      Loading,
       QrCodeVue,
       MoneyTransaction,
     },
@@ -186,10 +183,6 @@
   }
   .modal-card-body {
     min-height: 120px;
-  }
-  .loader-container {
-    position: relative;
-    height: 80px;
   }
   .amount-currency-symbol {
     margin: auto;

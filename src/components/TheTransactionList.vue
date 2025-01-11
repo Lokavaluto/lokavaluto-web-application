@@ -2,11 +2,14 @@
   <div class="card custom-card custom-card-padding">
     <span
       :class="{
-        hide: !isTransactionsLoading,
+        hide: !refreshAwaitingList.size,
       }"
       class="icon is-small is-default is-pulled-right is-rounded refresh"
     >
-      <fa-icon :class="{ refreshing: isTransactionsLoading }" icon="sync" />
+      <fa-icon
+        :class="{ refreshing: !!refreshAwaitingList.size }"
+        icon="sync"
+      />
     </span>
     <PendingTopUp
       :account="account"
@@ -56,7 +59,7 @@
     },
     data() {
       return {
-        isTransactionsLoading: false,
+        refreshAwaitingList: new Set<any>(),
         subRefreshToggle: false,
       }
     },
@@ -71,8 +74,12 @@
     },
 
     methods: {
-      trigger(value: boolean) {
-        this.isTransactionsLoading = value
+      trigger(value: boolean, issuer: any) {
+        if (value) {
+          this.refreshAwaitingList.add(issuer)
+        } else {
+          this.refreshAwaitingList.delete(issuer)
+        }
       },
       setRefreshIfNeeded() {
         const transactionsRefreshInterval =

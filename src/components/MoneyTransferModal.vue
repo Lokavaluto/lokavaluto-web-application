@@ -188,6 +188,8 @@
   import MoneyTransaction from "./MoneyTransaction.vue"
   import UseBatchLoading from "@/services/UseBatchLoading"
   import { debounceMethod } from "@/utils/debounce"
+  import applyDecorators from "@/utils/applyDecorators"
+  import { showSpinnerMethod } from "@/utils/showSpinner"
 
   @Options({
     name: "MoneyTransferModal",
@@ -263,58 +265,57 @@
       },
     },
     methods: {
-      async startScan() {
-        const scanPermission = await this.$qrCode.isPermissionGranted()
-        if (!scanPermission) {
-          this.$qrCode.stopScan()
-          return
-        }
-        this.$loading.show()
-        await this.$qrCode.prepare()
-        this.$loading.hide()
-
-        const result = await this.$qrCode.read()
-        let resultData
-        try {
-          resultData = JSON.parse(result.content)
-        } catch (err) {
-          throw new UIError(
-            this.$gettext("Invalid QR code content format"),
-            err
-          )
-        }
-        const { rp, rpb } = resultData
-        if (rp === this.userProfile.id) {
-          this.$msg.error(
-            this.$gettext("You can not transfer money to your own account")
-          )
-          return
-        }
-        if (!result.hasContent) {
-          this.$msg.error(this.$gettext("Unable to read QR code"))
-          return
-        }
-        let recipient
-
-        this.transactionType = "requestPay"
-        try {
-          recipient = await this.selectedBackend.searchRecipientByUri({
-            rp,
-            rpb,
+      startScan: applyDecorators(
+        [debounceMethod, showSpinnerMethod(".modal-card")],
+        async function (this: any) {
+          const scanPermission = await this.$qrCode.isPermissionGranted()
+          if (!scanPermission) {
+            this.$qrCode.stopScan()
+            return
+          }
+          await this.$qrCode.prepare()
+          const result = await this.$qrCode.read()
+          let resultData
+          try {
+            resultData = JSON.parse(result.content)
+          } catch (err) {
+            throw new UIError(
+              this.$gettext("Invalid QR code content format"),
+              err
+            )
+          }
+          const { rp, rpb } = resultData
+          if (rp === this.userProfile.id) {
+            this.$msg.error(
+              this.$gettext("You can not transfer money to your own account")
+            )
+            return
+          }
+          if (!result.hasContent) {
+            this.$msg.error(this.$gettext("Unable to read QR code"))
+            return
+          }
+          let recipient
+          try {
+            recipient = await this.selectedBackend.searchRecipientByUri({
+              rp,
+              rpb,
+            })
+          } catch (err) {
+            this.$msg.error(
+              this.$gettext("An error occured while searching recipient")
+            )
+            throw err
+          }
+          await this.toPaymentStage({
+            recipient,
+            amount: resultData.amount,
+            senderMemo: resultData.senderMemo,
+            recipientMemo: resultData.recipientMemo,
           })
-        } catch (err) {
-          this.$msg.error(
-            this.$gettext("An error occured while searching recipient")
-          )
-          throw err
         }
-        await this.toPaymentStage({
-          recipient,
-          amount: resultData.amount,
-          senderMemo: resultData.senderMemo,
-          recipientMemo: resultData.recipientMemo,
-        })
-      },
+      ),
+
       handleClickRecipient(recipient: any): void {
         return this.toPaymentStage({ recipient })
       },
@@ -333,17 +334,124 @@
         this.recipientMemo = config?.recipientMemo
         this.config = config
       },
-      sendTransaction: debounceMethod(async function (): Promise<void> {
-        this.errors = false
-        if (this.ownSelectedAccount._obj.getBalance) {
-          let realBal
+
+      sendTransaction: applyDecorators(
+        [debounceMethod, showSpinnerMethod(".transactions")],
+        async function (this: any): Promise<void> {
+          this.errors = false
+          if (this.ownSelectedAccount._obj.getBalance) {
+            let realBal
+            try {
+              realBal = await this.ownSelectedAccount._obj.getBalance("latest")
+            } catch (err) {
+              this.$msg.error(
+                this.$gettext(
+                  "An unexpected issue occurred while checking available funds. " +
+                    "The transaction was not sent. We are sorry for the inconvenience."
+                ) +
+                  "<br/>" +
+                  this.$gettext(
+                    "You can try again. If the issue persists, " +
+                      "please contact your administrator."
+                  )
+              )
+              console.error("getBalance failed:", err)
+              return
+            }
+            // ensure realBal is the correct format
+            if (
+              !(realBal.includes(".") && realBal.split(".")[1].length === 2)
+            ) {
+              throw new Error("Invalid amount returned by getBalance", realBal)
+            }
+            const amount_cents = parseInt(this.amount.replace(".", ""))
+            const realBal_cents = parseInt(realBal.replace(".", ""))
+            const bal_cents = parseInt(
+              this.ownSelectedAccount.bal.replace(".", "")
+            )
+            // ensure we are in safe limits (we could use BigInt if needed)
+            Object.entries({ amount_cents, realBal_cents, bal_cents }).forEach(
+              ([label, value]) => {
+                if (value > Number.MAX_SAFE_INTEGER)
+                  throw new Error(
+                    `Amount '${label.split("_")[0]}' exceeds safe max values ` +
+                      `for current internal representation (value: ${value})`
+                  )
+              }
+            )
+            if (amount_cents > bal_cents) {
+              this.errors = this.$gettext("Insufficient balance")
+              return
+            }
+            if (amount_cents > realBal_cents) {
+              this.errors = this.$gettext(
+                "The last transactions were not yet all processed. " +
+                  "To ensure that this payment can be sent, you need " +
+                  "to wait for these pending transactions to be processed. " +
+                  "This can take a few minutes. You can also lower your " +
+                  "transaction amount underneath %{ realBal } %{ currency }. " +
+                  "If the problem persists, please contact an administrator.",
+                {
+                  realBal,
+                  currency: this.ownSelectedAccount.curr,
+                }
+              )
+              return
+            }
+          }
+
+          let dateBegin = Date.now()
+          let payment
+          this.$store.commit("setRequestLoadingAfterCreds", true)
           try {
-            realBal = await this.ownSelectedAccount._obj.getBalance("latest")
-          } catch (err) {
+            payment = await this.selectedRecipient.transfer(
+              this.amount.toString(),
+              this.senderMemo,
+              this.recipientMemo
+            )
+          } catch (err: any) {
+            if (err instanceof LokapiExc.PaymentConfirmationMissing) {
+              this.$modal.args.value[0].refreshTransaction()
+              this.close()
+              this.$msg.warning(
+                this.$gettext(
+                  "The transaction was sent but no confirmation was received. "
+                ) +
+                  "<br/>" +
+                  this.$gettext(
+                    "Please make sure to double check in the transaction list " +
+                      "if this transaction appears in the near future. "
+                  ) +
+                  "<br/>" +
+                  this.$gettext(
+                    "Contact your administrator if it fails to show up."
+                  ),
+                false
+              )
+              return
+            }
+            if (err instanceof LokapiExc.InsufficientBalance) {
+              this.errors = this.$gettext(
+                "Transaction was refused due to insufficient balance"
+              )
+              return
+            }
+            if (err instanceof LokapiExc.InactiveAccount) {
+              this.$msg.error(
+                this.$gettext("Target account is inactive.") +
+                  "<br/>" +
+                  this.$gettext("You can't send money to this account.")
+              )
+              return
+            }
+            if (err.message === "User canceled the dialog box") {
+              // A warning message should have already been sent
+              return
+            }
             this.$msg.error(
               this.$gettext(
-                "An unexpected issue occurred while checking available funds. " +
-                  "The transaction was not sent. We are sorry for the inconvenience."
+                "An unexpected issue occurred during the money transfer. " +
+                  "We are sorry for the inconvenience."
               ) +
                 "<br/>" +
                 this.$gettext(
@@ -351,162 +459,61 @@
                     "please contact your administrator."
                 )
             )
-            console.error("getBalance failed:", err)
-            return
-          }
-          // ensure realBal is the correct format
-          if (!(realBal.includes(".") && realBal.split(".")[1].length === 2)) {
-            throw new Error("Invalid amount returned by getBalance", realBal)
-          }
-          const amount_cents = parseInt(this.amount.replace(".", ""))
-          const realBal_cents = parseInt(realBal.replace(".", ""))
-          const bal_cents = parseInt(
-            this.ownSelectedAccount.bal.replace(".", "")
-          )
-          // ensure we are in safe limits (we could use BigInt if needed)
-          Object.entries({ amount_cents, realBal_cents, bal_cents }).forEach(
-            ([label, value]) => {
-              if (value > Number.MAX_SAFE_INTEGER)
-                throw new Error(
-                  `Amount '${label.split("_")[0]}' exceeds safe max values ` +
-                    `for current internal representation (value: ${value})`
-                )
-            }
-          )
-          if (amount_cents > bal_cents) {
-            this.errors = this.$gettext("Insufficient balance")
-            return
-          }
-          if (amount_cents > realBal_cents) {
-            this.errors = this.$gettext(
-              "The last transactions were not yet all processed. " +
-                "To ensure that this payment can be sent, you need " +
-                "to wait for these pending transactions to be processed. " +
-                "This can take a few minutes. You can also lower your " +
-                "transaction amount underneath %{ realBal } %{ currency }. " +
-                "If the problem persists, please contact an administrator.",
-              {
-                realBal,
-                currency: this.ownSelectedAccount.curr,
-              }
-            )
-            return
-          }
-        }
 
-        let dateBegin = Date.now()
-        let payment
-        this.$store.commit("setRequestLoadingAfterCreds", true)
-        try {
-          payment = await this.selectedRecipient.transfer(
-            this.amount.toString(),
-            this.senderMemo,
-            this.recipientMemo
-          )
-        } catch (err: any) {
-          if (err instanceof LokapiExc.PaymentConfirmationMissing) {
-            this.$modal.args.value[0].refreshTransaction()
-            this.close()
-            this.$msg.warning(
-              this.$gettext(
-                "The transaction was sent but no confirmation was received. "
-              ) +
-                "<br/>" +
-                this.$gettext(
-                  "Please make sure to double check in the transaction list " +
-                    "if this transaction appears in the near future. "
-                ) +
-                "<br/>" +
-                this.$gettext(
-                  "Contact your administrator if it fails to show up."
+            console.error("Payment failed:", err)
+            return
+          } finally {
+            this.$store.commit("setRequestLoadingAfterCreds", false)
+            this.$loading.hide()
+          }
+
+          this.errors = false
+          this.$modal.args.value[0].refreshTransaction()
+          this.$modal.args.value[0].refreshAccounts(true)
+          this.close()
+
+          await this.$modal.open("ConfirmPaymentModal", {
+            transaction: payment,
+            type:
+              this.transactionType === "reconversion"
+                ? "reconversion"
+                : "paymentConfirmation",
+          })
+          if (
+            !this.selectedRecipient.is_favorite &&
+            this.transactionType !== "reconversion"
+          ) {
+            this.$dialog
+              .show({
+                title: this.$gettext("Add as favorite"),
+                content: this.$gettext(
+                  "Do you want to add %{ name } to your favorite list ?",
+                  { name: this.selectedRecipient.name }
                 ),
-              false
-            )
-            return
+                buttons: [
+                  { label: this.$gettext("Add"), id: "add" },
+                  { label: this.$gettext("Later"), id: "later" },
+                ],
+              })
+              .then(async (result: any) => {
+                if (result === "later") return
+                try {
+                  await this.selectedRecipient.toggleFavorite()
+                } catch (err) {
+                  // XXXvlab: using ``.then`` makes it trigger outside of
+                  // view js grasp.
+                  this.$errorHandler(err)
+                  return
+                }
+                this.$msg.success(
+                  this.$gettext("%{ name } was added to your favorite list", {
+                    name: this.selectedRecipient.name,
+                  })
+                )
+              })
           }
-          if (err instanceof LokapiExc.InsufficientBalance) {
-            this.errors = this.$gettext(
-              "Transaction was refused due to insufficient balance"
-            )
-            return
-          }
-          if (err instanceof LokapiExc.InactiveAccount) {
-            this.$msg.error(
-              this.$gettext("Target account is inactive.") +
-                "<br/>" +
-                this.$gettext("You can't send money to this account.")
-            )
-            return
-          }
-          if (err.message === "User canceled the dialog box") {
-            // A warning message should have already been sent
-            return
-          }
-          this.$msg.error(
-            this.$gettext(
-              "An unexpected issue occurred during the money transfer. " +
-                "We are sorry for the inconvenience."
-            ) +
-              "<br/>" +
-              this.$gettext(
-                "You can try again. If the issue persists, " +
-                  "please contact your administrator."
-              )
-          )
-
-          console.error("Payment failed:", err)
-          return
-        } finally {
-          this.$store.commit("setRequestLoadingAfterCreds", false)
-          this.$loading.hide()
         }
-
-        this.errors = false
-        this.$modal.args.value[0].refreshTransaction()
-        this.$modal.args.value[0].refreshAccounts(true)
-        this.close()
-
-        await this.$modal.open("ConfirmPaymentModal", {
-          transaction: payment,
-          type:
-            this.transactionType === "reconversion"
-              ? "reconversion"
-              : "paymentConfirmation",
-        })
-        if (
-          !this.selectedRecipient.is_favorite &&
-          this.transactionType !== "reconversion"
-        ) {
-          this.$dialog
-            .show({
-              title: this.$gettext("Add as favorite"),
-              content: this.$gettext(
-                "Do you want to add %{ name } to your favorite list ?",
-                { name: this.selectedRecipient.name }
-              ),
-              buttons: [
-                { label: this.$gettext("Add"), id: "add" },
-                { label: this.$gettext("Later"), id: "later" },
-              ],
-            })
-            .then(async (result: any) => {
-              if (result === "later") return
-              try {
-                await this.selectedRecipient.toggleFavorite()
-              } catch (err) {
-                // XXXvlab: using ``.then`` makes it trigger outside of
-                // view js grasp.
-                this.$errorHandler(err)
-                return
-              }
-              this.$msg.success(
-                this.$gettext("%{ name } was added to your favorite list", {
-                  name: this.selectedRecipient.name,
-                })
-              )
-            })
-        }
-      }),
+      ),
       wait(ms: number): Promise<void> {
         return new Promise((resolve, reject) => {
           setTimeout(() => {

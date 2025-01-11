@@ -174,6 +174,9 @@
   import { mapGetters } from "vuex"
   import moment from "moment"
   import { UIError } from "../exception"
+  import { showSpinnerMethod } from "@/utils/showSpinner"
+  import { debounceMethod } from "@/utils/debounce"
+  import applyDecorators from "@/utils/applyDecorators"
 
   @Options({
     name: "ConfirmPaymentModal",
@@ -273,25 +276,25 @@
           }, 5000)
         })
       },
-      async cancelTopUpRequest(): Promise<void> {
-        this.$loading.show()
-        try {
-          await this.$modal.args?.value[0].transaction.cancel()
-        } catch (err) {
-          this.$loading.hide()
-          throw new UIError(
-            this.$gettext(
-              "An error occurred while deleting top-up request, please try again or contact an administrator"
-            ),
-            err
+      cancelTopUpRequest: applyDecorators(
+        [debounceMethod, showSpinnerMethod(".modal-card-body")],
+        async function (this: any): Promise<void> {
+          try {
+            await this.$modal.args?.value[0].transaction.cancel()
+          } catch (err) {
+            throw new UIError(
+              this.$gettext(
+                "An error occurred while deleting top-up request, please try again or contact an administrator"
+              ),
+              err
+            )
+          }
+          await this.closeAndRefresh()
+          this.$msg.success(
+            this.$gettext("The top-up request has been successfully deleted")
           )
         }
-        await this.closeAndRefresh()
-        this.$loading.hide()
-        this.$msg.success(
-          this.$gettext("The top-up request has been successfully deleted")
-        )
-      },
+      ),
       async closeAndRefresh(): Promise<void> {
         this.$modal.args?.value[0].refreshTransaction()
         this.$modal.args?.value[0].refreshAccounts(true)

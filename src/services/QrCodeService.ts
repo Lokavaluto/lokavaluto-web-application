@@ -12,12 +12,13 @@ import ScanQrCode from "@/components/ScanQrCode.vue"
 class QrCodeService {
   gettext: any
   listener: PluginListenerHandle | null = null
+  startPromiseReject: any | null = null
 
   constructor(gettext: any) {
     this.gettext = gettext
   }
 
-  private async startScan(): Promise<any> {
+  private async _startScan(): Promise<any> {
     const app = document.getElementById("app")
     if (!app) {
       throw new Error("No element id 'app' found to insert qrcode ui")
@@ -55,8 +56,17 @@ class QrCodeService {
     qrCodeContent.style.height = "fit-content"
     classicContent.style.backgroundColor = "transparent"
     classicContent.style.opacity = "0"
+    let r = await BarCodeScanner.startScan()
+    return r
+  }
 
-    return await BarCodeScanner.startScan()
+  private startScan(): Promise<any> {
+    return new Promise((resolve, reject) => {
+      this.startPromiseReject = reject
+      this._startScan().then((r) => {
+        resolve(r)
+      })
+    })
   }
 
   public async read() {
@@ -80,6 +90,10 @@ class QrCodeService {
 
     if (Capacitor.getPlatform() == "ios") await StatusBar.show()
     if (!this.listener) return
+
+    if (this.startPromiseReject) {
+      this.startPromiseReject(new Error("User canceled the scan screen"))
+    }
 
     this.listener.remove()
     this.listener = null

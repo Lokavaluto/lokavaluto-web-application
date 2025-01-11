@@ -166,6 +166,9 @@
   import PasswordField from "@/components/PasswordField.vue"
   import { mapGetters } from "vuex"
   import { debounceMethod } from "@/utils/debounce"
+  import applyDecorators from "@/utils/applyDecorators"
+  import { showSpinnerMethod } from "@/utils/showSpinner"
+
   @Options({
     name: "CreateAccount",
     components: { AuthPref, PasswordField },
@@ -256,51 +259,56 @@
       saveSimplifiedAuthPref(accountAuthService: any, userConfigInput: any) {
         this.userAuthPref = [accountAuthService, userConfigInput]
       },
-      createUserAccount: debounceMethod(async function () {
-        let userAccount
-        try {
-          userAccount = await this.$store.dispatch("createUserAccount", [
-            this.form["accountPassword"],
-            this.form["accountBackend"],
-          ])
-        } catch (err) {
-          console.error(
-            "Something went wrong on createUserAccount request",
-            err
-          )
-          if (!(err instanceof LokAPIExc.UserAccountAlreadyExists)) {
-            this.$msg.error(
-              this.$gettext("Wallet creation unexpectedly failed.") +
-                " " +
-                this.$gettext("Please try again or contact your administrator")
-            )
-
-            return // stay on page
-          }
-          this.$msg.warning(this.$gettext("Wallet already created"))
-        }
-
-        if (this.userAuthPref) {
+      createUserAccount: applyDecorators(
+        [showSpinnerMethod(".main"), debounceMethod],
+        async function (this: any): Promise<void> {
+          let userAccount
           try {
-            const [accountAuthService, userConfigInput] = this.userAuthPref
-            accountAuthService.configId = userAccount.internalId
-            await accountAuthService.setUserConfig(userConfigInput)
+            userAccount = await this.$store.dispatch("createUserAccount", [
+              this.form["accountPassword"],
+              this.form["accountBackend"],
+            ])
           } catch (err) {
             console.error(
               "Something went wrong on createUserAccount request",
               err
             )
-            this.$msg.error(
-              this.$gettext(
-                "Settings for simplified authentication were not saved correctly... " +
-                  'Please try again in the "Settings" page or contact your administrator'
+            if (!(err instanceof LokAPIExc.UserAccountAlreadyExists)) {
+              this.$msg.error(
+                this.$gettext("Wallet creation unexpectedly failed.") +
+                  " " +
+                  this.$gettext(
+                    "Please try again or contact your administrator"
+                  )
               )
-            )
+
+              return // stay on page
+            }
+            this.$msg.warning(this.$gettext("Wallet already created"))
           }
+
+          if (this.userAuthPref) {
+            try {
+              const [accountAuthService, userConfigInput] = this.userAuthPref
+              accountAuthService.configId = userAccount.internalId
+              await accountAuthService.setUserConfig(userConfigInput)
+            } catch (err) {
+              console.error(
+                "Something went wrong on createUserAccount request",
+                err
+              )
+              this.$msg.error(
+                this.$gettext(
+                  "Settings for simplified authentication were not saved correctly... " +
+                    'Please try again in the "Settings" page or contact your administrator'
+                )
+              )
+            }
+          }
+          this.$store.dispatch("fetchComponentDefs")
+          this.$router.push({ name: "dashboard" })
         }
-        this.$store.dispatch("fetchComponentDefs")
-        this.$router.push({ name: "dashboard" })
-      }),
+      ),
     },
   })
   export default class CreateAccount extends Vue {}

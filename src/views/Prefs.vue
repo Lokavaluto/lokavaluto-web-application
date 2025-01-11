@@ -27,12 +27,10 @@
   import AuthPrefs from "@/components/AuthPrefs.vue"
   import LangPrefs from "@/components/LangPrefs.vue"
   import BiometryPrefs from "@/components/BiometryPrefs.vue"
-  import Loading from "vue-loading-overlay"
-  import "vue-loading-overlay/dist/css/index.css"
 
   @Options({
     name: "Prefs",
-    components: { AuthPrefs, LangPrefs, Loading, BiometryPrefs },
+    components: { AuthPrefs, LangPrefs, BiometryPrefs },
     computed: {
       ...mapState({
         componentDefs: (state: any) => state.prefs.componentDefs,

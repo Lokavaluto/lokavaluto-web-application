@@ -99,6 +99,9 @@
 <script lang="ts">
   import { Options, Vue } from "vue-class-component"
   import { UIError } from "../exception"
+  import { showSpinnerMethod } from "@/utils/showSpinner"
+  import { debounceMethod } from "@/utils/debounce"
+  import applyDecorators from "@/utils/applyDecorators"
 
   @Options({
     name: "MoneyCreditModal",
@@ -163,71 +166,72 @@
             ? this.creditableMoneyAccounts[0]
             : false
       },
-      async newLinkTab() {
-        // This to ensure we are left with 2 decimals only
-        this.amount = this.amount.toFixed(2)
-        const { refreshTransaction, refreshAccounts, account } =
-          this.$modal.args.value[0]
-        let url: any = null
-        try {
-          if (!this.selectedCreditAccount) {
-            if (this.creditableMoneyAccounts.length > 1) {
-              throw new Error("Unexpected multiple creditable account found.")
+      newLinkTab: applyDecorators(
+        [debounceMethod, showSpinnerMethod(".modal-card-body")],
+        async function (this: any): Promise<void> {
+          // This to ensure we are left with 2 decimals only
+          this.amount = this.amount.toFixed(2)
+          const { refreshTransaction, account } = this.$modal.args.value[0]
+
+          let url: any = null
+          try {
+            if (!this.selectedCreditAccount) {
+              if (this.creditableMoneyAccounts.length > 1) {
+                throw new Error("Unexpected multiple creditable account found.")
+              }
+              this.selectedCreditAccount = this.creditableMoneyAccounts[0]
             }
-            this.selectedCreditAccount = this.creditableMoneyAccounts[0]
-          }
-          this.$loading.show()
-          url = await this.selectedCreditAccount._obj.getCreditUrl(this.amount)
-          this.creditOrderUrl = url.order_url
-        } catch (err) {
-          this.$loading.hide()
-          throw new UIError(
-            this.$gettext(
-              "An unexpected issue occurred while attempting to top up your account"
-            ),
-            err
-          )
-        }
-        this.$lokapi.flushBackendCaches()
-        this.$store.dispatch("fetchAccounts")
-        this.$loading.hide()
-
-        let pendingTopUp
-        try {
-          pendingTopUp = await account._obj.getPendingTopUp()
-        } catch (err) {
-          throw new UIError(
-            this.$gettext(
-              "An unexpected server error occured while fetching pending topup list"
-            ),
-            err
-          )
-        }
-        pendingTopUp = pendingTopUp.filter(
-          (topup: any) => topup.jsonData.odoo.order_url === url.order_url
-        )
-
-        if (pendingTopUp?.length === 0) {
-          this.$msg.error(
-            this.$gettext(
-              "An unexpected value was returned in the pending topup list"
+            url = await this.selectedCreditAccount._obj.getCreditUrl(
+              this.amount
             )
+            this.creditOrderUrl = url.order_url
+          } catch (err) {
+            throw new UIError(
+              this.$gettext(
+                "An unexpected issue occurred while attempting to top up your account"
+              ),
+              err
+            )
+          }
+          this.$lokapi.flushBackendCaches()
+          this.$store.dispatch("fetchAccounts")
+
+          let pendingTopUp
+          try {
+            pendingTopUp = await account._obj.getPendingTopUp()
+          } catch (err) {
+            throw new UIError(
+              this.$gettext(
+                "An unexpected server error occured while fetching pending topup list"
+              ),
+              err
+            )
+          }
+          pendingTopUp = pendingTopUp.filter(
+            (topup: any) => topup.jsonData.odoo.order_url === url.order_url
           )
-          return
+
+          if (pendingTopUp?.length === 0) {
+            this.$msg.error(
+              this.$gettext(
+                "An unexpected value was returned in the pending topup list"
+              )
+            )
+            return
+          }
+          this.$msg.success(
+            this.$gettext("Top-up request has been successfully created")
+          )
+          refreshTransaction()
+          this.$modal.close()
+          await this.$modal.open("ConfirmPaymentModal", {
+            account,
+            transaction: pendingTopUp[0],
+            type: "topup",
+            refreshTransaction,
+          })
         }
-        this.$msg.success(
-          this.$gettext("Top-up request has been successfully created")
-        )
-        refreshTransaction()
-        this.$modal.close()
-        await this.$modal.open("ConfirmPaymentModal", {
-          account,
-          transaction: pendingTopUp[0],
-          type: "topup",
-          refreshTransaction,
-          refreshAccounts,
-        })
-      },
+      ),
       setFocus() {
         this.$nextTick(() => {
           if (this.$refs.amountcredit) {

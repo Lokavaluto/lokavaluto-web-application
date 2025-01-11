@@ -82,6 +82,10 @@
   import { e as RequestExc } from "@0k/types-request"
 
   import PasswordField from "@/components/PasswordField.vue"
+  import { showSpinnerMethod } from "@/utils/showSpinner"
+  import applyDecorators from "@/utils/applyDecorators"
+  import { debounceMethod } from "@/utils/debounce"
+
   @Options({
     name: "Login",
     components: {
@@ -147,92 +151,94 @@
           this.submit()
         }
       },
-      async submit(): Promise<void> {
-        try {
-          this.$loading.show()
-          await this.$store.dispatch("login", {
-            login: this.email.toLowerCase(),
-            password: this.password,
-          })
-          this.success = this.$gettext("Connection successful")
-          this.$router.push({ name: "dashboard" })
-          this.$persistentStore.set("loginEmail", this.email)
-        } catch (e) {
-          // { APIRequestFailed, InvalidCredentials }
-          if (e instanceof RestExc.APIRequestFailed) {
+      submit: applyDecorators(
+        [debounceMethod, showSpinnerMethod(".login-container")],
+        async function (this: any): Promise<void> {
+          try {
+            await this.$store.dispatch("login", {
+              login: this.email.toLowerCase(),
+              password: this.password,
+            })
+            this.success = this.$gettext("Connection successful")
+            this.$router.push({ name: "dashboard" })
+            this.$persistentStore.set("loginEmail", this.email)
+          } catch (e) {
+            // { APIRequestFailed, InvalidCredentials }
+            if (e instanceof RestExc.APIRequestFailed) {
+              this.fail = this.$gettext(
+                "Request refused by remote server. Contact your administrator"
+              )
+              return
+            }
+            if (e instanceof RestExc.InvalidCredentials) {
+              this.fail = this.$gettext("Invalid credentials")
+              return
+            }
+            if (e instanceof RequestExc.RequestFailed) {
+              this.fail = this.$gettext("Request failed to remote server.")
+              return
+            }
             this.fail = this.$gettext(
-              "Request refused by remote server. Contact your administrator"
+              "Unexpected issue when attempting to connect to remote server."
             )
-            return
+            throw e
           }
-          if (e instanceof RestExc.InvalidCredentials) {
-            this.fail = this.$gettext("Invalid credentials")
-            return
-          }
-          if (e instanceof RequestExc.RequestFailed) {
-            this.fail = this.$gettext("Request failed to remote server.")
-            return
-          }
-          this.fail = this.$gettext(
-            "Unexpected issue when attempting to connect to remote server."
-          )
-          throw e
-        } finally {
-          this.$loading.hide()
-        }
 
-        const biometryAvailable = await this.$biometry.isAvailable()
-        if (!biometryAvailable) return
+          const biometryAvailable = await this.$biometry.isAvailable()
+          if (!biometryAvailable) return
 
-        const prefs = (await this.$localSettings.load()) || {}
-        const biometryEnabled = prefs?.biometryEnabled
-        if (biometryEnabled === false) return
-        if (
-          biometryEnabled === null ||
-          typeof biometryEnabled === "undefined"
-        ) {
-          const answer = await this.$dialog.show({
-            title: this.$gettext("Enable biometric login"),
-            content: this.$gettext(
-              "Would you like to use your device's biometric (fingerprint, face recognition, ...) capability to login ?"
-            ),
-            buttons: [
-              { label: this.$gettext("Yes"), id: "yes" },
-              { label: this.$gettext("No"), id: "no" },
-              { label: this.$gettext("Ask me later"), id: "later" },
-            ],
-          })
-          console.log(answer)
-          if (answer === "later") return
-          if (answer === "no") {
-            prefs.biometryEnabled = false
+          const prefs = (await this.$localSettings.load()) || {}
+          const biometryEnabled = prefs?.biometryEnabled
+          if (biometryEnabled === false) return
+          if (
+            biometryEnabled === null ||
+            typeof biometryEnabled === "undefined"
+          ) {
+            const answer = await this.$dialog.show({
+              title: this.$gettext("Enable biometric login"),
+              content: this.$gettext(
+                "Would you like to use your device's biometric (fingerprint, face recognition, ...) capability to login ?"
+              ),
+              buttons: [
+                { label: this.$gettext("Yes"), id: "yes" },
+                { label: this.$gettext("No"), id: "no" },
+                { label: this.$gettext("Ask me later"), id: "later" },
+              ],
+            })
+            console.log(answer)
+            if (answer === "later") return
+            if (answer === "no") {
+              prefs.biometryEnabled = false
+              await this.$localSettings.save(prefs)
+              return
+            }
+            prefs.biometryEnabled = true
             await this.$localSettings.save(prefs)
-            return
           }
-          prefs.biometryEnabled = true
-          await this.$localSettings.save(prefs)
-        }
-        // biometryEnabled is true
-        const hasCredentialsAvailable =
-          await this.$biometry.hasCredentialsAvailable("login")
-        console.log("has", hasCredentialsAvailable)
-        if (hasCredentialsAvailable) return
-        try {
-          await this.$biometry.saveCredentials("login", {
-            username: this.email,
-            password: this.password,
-          })
-        } catch (e) {
-          this.$msg.error(
-            this.$gettext(
-              "Unexpected issue occurred while saving your credentials"
+          // biometryEnabled is true
+          const hasCredentialsAvailable =
+            await this.$biometry.hasCredentialsAvailable("login")
+          console.log("has", hasCredentialsAvailable)
+          if (hasCredentialsAvailable) return
+          try {
+            await this.$biometry.saveCredentials("login", {
+              username: this.email,
+              password: this.password,
+            })
+          } catch (e) {
+            this.$msg.error(
+              this.$gettext(
+                "Unexpected issue occurred while saving your credentials"
+              )
             )
-          )
-          throw e
-        }
+            throw e
+          }
 
-        this.$msg.success(this.$gettext("Biometric login successfully set up"))
-      },
+          this.$msg.success(
+            this.$gettext("Biometric login successfully set up")
+          )
+        }
+      ),
     },
   })
   export default class Login extends Vue {}

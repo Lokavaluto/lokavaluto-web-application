@@ -4,12 +4,7 @@
       <div class="columns is-tablet">
         <div class="column">
           <div class="accounts card custom-card custom-card-padding">
-            <loading
-              v-model:active="isLoading"
-              :can-cancel="false"
-              :is-full-page="false"
-            />
-            <div v-if="!isLoading">
+            <div>
               <div
                 class="notification is-danger is-light"
                 v-if="hasLoadingError"
@@ -78,9 +73,6 @@
                           "
                           id="discard"
                           v-on:click="discardUserAccount(account)"
-                          v-if="
-                            selectedItem !== account || !isWaitingForValidation
-                          "
                         >
                           {{ $gettext("Discard") }}
                         </a>
@@ -92,24 +84,9 @@
                             is-small is-pulled-right
                           "
                           v-on:click="validateUserAccount(account)"
-                          v-if="
-                            selectedItem !== account || !isWaitingForValidation
-                          "
                         >
                           {{ $gettext("Approve") }}
                         </a>
-                        <div
-                          v-else
-                          class="transactions-loader-container is-pulled-right"
-                        >
-                          <loading
-                            v-model:active="isWaitingForValidation"
-                            :can-cancel="false"
-                            :is-full-page="false"
-                            :width="30"
-                            :height="30"
-                          />
-                        </div>
                       </td>
                     </tr>
                   </tbody>
@@ -125,18 +102,16 @@
 
 <script lang="ts">
   import { Options, Vue } from "vue-class-component"
-  import Loading from "vue-loading-overlay"
   import { UIError } from "@/exception"
+  import { showSpinnerMethod } from "@/utils/showSpinner"
+  import { debounceMethodWithOpts } from "@/utils/debounce"
+  import applyDecorators from "@/utils/applyDecorators"
 
   @Options({
     name: "PendingAccounts",
-    components: { Loading: Loading },
     data() {
       return {
-        isLoading: false,
         hasLoadingError: false,
-        isWaitingForValidation: false,
-        selectedItem: null,
       }
     },
     mounted() {
@@ -148,94 +123,113 @@
       },
     },
     methods: {
-      async validateUserAccount(account: any): Promise<void> {
-        this.selectedItem = account
-        this.isWaitingForValidation = true
-        try {
-          await account.validateCreation()
-        } catch (err: any) {
-          this.isWaitingForValidation = false
-          if (err.message === "User canceled the dialog box") {
-            // A warning message should have already been sent
-            return
+      validateUserAccount: applyDecorators(
+        [
+          debounceMethodWithOpts({
+            keyFn: (account: any) => account.internalId,
+          }),
+          showSpinnerMethod(".accounts"),
+        ],
+        async function (this: any, account: any): Promise<void> {
+          try {
+            await account.validateCreation()
+          } catch (err: any) {
+            if (err.message === "User canceled the dialog box") {
+              // A warning message should have already been sent
+              return
+            }
+
+            throw new UIError(
+              this.$gettext(
+                "An unexpected issue occurred while approving " +
+                  "the wallet account creation of user %{ name }",
+                {
+                  name: account.name,
+                }
+              ),
+              err
+            )
+          }
+          try {
+            await this.updatePendingAccount()
+          } catch (err) {
+            throw new UIError(
+              this.$gettext(
+                "An unexpected issue occurred while updating the pending accounts list"
+              ),
+              err
+            )
+          }
+        }
+      ),
+      discardUserAccount: applyDecorators(
+        [
+          debounceMethodWithOpts({
+            keyFn: (account: any) => account.internalId,
+          }),
+          showSpinnerMethod(".accounts"),
+        ],
+        async function (this: any, account: any): Promise<void> {
+          try {
+            await account.discardCreateRequest()
+          } catch (err) {
+            throw new UIError(
+              this.$gettext(
+                "An unexpected issue occurred while discarding " +
+                  "the wallet account creation of user %{ name }",
+                {
+                  name: account.name,
+                }
+              ),
+              err
+            )
           }
 
-          throw new UIError(
-            this.$gettext(
-              "An unexpected issue occurred while approving " +
-                "the wallet account creation of user %{ name }",
-              {
-                name: account.name,
-              }
-            ),
-            err
-          )
-        }
-        this.isWaitingForValidation = false
-        try {
-          await this.updatePendingAccount()
-        } catch (err) {
-          throw new UIError(
-            this.$gettext(
-              "An unexpected issue occurred while updating the pending accounts list"
-            ),
-            err
-          )
-        }
+          try {
+            await account.discardCreateRequest()
+          } catch (err) {
+            throw new UIError(
+              this.$gettext(
+                "An unexpected issue occurred while discarding " +
+                  "the wallet account creation of user %{ name }",
+                {
+                  name: account.name,
+                }
+              ),
+              err
+            )
+          }
 
-        this.$msg.success(
-          this.$gettext("User %{ name }'s account creation was approved", {
-            name: account.name,
-          })
-        )
-      },
-      async discardUserAccount(account: any): Promise<void> {
-        this.selectedItem = account
-        this.isWaitingForValidation = true
-        try {
-          await account.discardCreateRequest()
-        } catch (err) {
-          this.isWaitingForValidation = false
+          try {
+            await this.updatePendingAccount()
+          } catch (err) {
+            throw new UIError(
+              this.$gettext(
+                "An unexpected issue occurred while updating the pending accounts list"
+              ),
+              err
+            )
+          }
 
-          throw new UIError(
-            this.$gettext(
-              "An unexpected issue occurred while discarding " +
-                "the wallet account creation of user %{ name }",
-              {
-                name: account.name,
-              }
-            ),
-            err
+          this.$msg.success(
+            this.$gettext("User %{ name }'s account creation was discarded", {
+              name: account.name,
+            })
           )
         }
-        this.isWaitingForValidation = false
-        try {
-          await this.updatePendingAccount()
-        } catch (err) {
-          throw new UIError(
-            this.$gettext(
-              "An unexpected issue occurred while updating the pending accounts list"
-            ),
-            err
-          )
+      ),
+      updatePendingAccount: applyDecorators(
+        [showSpinnerMethod(".accounts")],
+        async function (this: any): Promise<void> {
+          try {
+            await this.$store.dispatch("fetchPendingUserAccounts")
+            this.hasLoadingError = false
+          } catch (e: any) {
+            console.error("Failed to fetch pending accounts", e)
+            this.hasLoadingError = true
+          }
         }
-        this.$msg.success(
-          this.$gettext("User %{ name }'s account creation was discarded", {
-            name: account.name,
-          })
-        )
-      },
-      async updatePendingAccount() {
-        this.isLoading = true
-        try {
-          await this.$store.dispatch("fetchPendingUserAccounts")
-          this.hasLoadingError = false
-        } catch (e: any) {
-          console.error("Failed to fetch pending accounts", e)
-          this.hasLoadingError = true
-        }
-        this.isLoading = false
-      },
+      ),
     },
   })
   export default class Admin extends Vue {}
