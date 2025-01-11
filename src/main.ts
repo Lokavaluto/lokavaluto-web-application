@@ -1,4 +1,4 @@
-import { LocalStore } from "@lokavaluto/lokapi-browser"
+import { LocalStore, t as LokAPITypes } from "@lokavaluto/lokapi-browser"
 import { createApp } from "vue"
 import { Capacitor } from "@capacitor/core"
 import "vue-loading-overlay/dist/css/index.css"
@@ -37,6 +37,7 @@ import { LokAPI } from "./services/lokapiService"
 import mkGettext from "./services/Gettext"
 import QrCodeService from "@/services/QrCodeService"
 import UseModal from "./services/UseModal"
+import useDropdownMenu from "./services/UseDropdownMenu"
 
 // Components
 
@@ -276,6 +277,69 @@ fetchConfig("config.json").then(async (config: any) => {
     return false
   })
 
+  const exportService = new ExportService(gettext)
+  // Dropdowns
+  const dropdown = useDropdownMenu()
+
+  dropdown.register((obj: any) => {
+    if (store.state.lokapi.virtualAccountTree.includes(obj)) {
+      return [
+        {
+          label: $gettext("Qrcode"),
+          icon: "qrcode",
+          action: () => modal.open("QrCodeModal", { accountId: obj.id }),
+        },
+      ]
+    }
+    return []
+  })
+
+  dropdown.register((obj: any) => {
+    if (
+      store.state.lokapi.virtualAccountTree.includes(obj) &&
+      obj?.safeWalletRecipient &&
+      config?.reconversion
+    ) {
+      return [
+        {
+          label: "Reconversion",
+          icon: "euro-sign",
+          action: (refreshTransaction: any) =>
+            modal.open("MoneyTransferModal", {
+              account: obj,
+              transactionType: "reconversion",
+              refreshTransaction,
+            }),
+        },
+      ]
+    }
+    return []
+  })
+
+  dropdown.register((obj: any) => {
+    if (obj.walletData && store.state.lokapi.virtualAccountTree.includes(obj)) {
+      return [
+        {
+          label: "Export wallet",
+          icon: "wallet",
+          action: async () => {
+            const wallet = obj.walletData
+            try {
+              await exportService.download(
+                JSON.stringify(wallet, null, 4),
+                "wallet",
+                "text/dat"
+              )
+            } catch (err) {
+              throw new UIError("the Wallet could not be downloaded", err)
+            }
+          },
+        },
+      ]
+    }
+    return []
+  })
+
   app.use(store)
   app.use(Loading)
   app.use(gettext)
@@ -291,11 +355,12 @@ fetchConfig("config.json").then(async (config: any) => {
   app.config.globalProperties.$persistentStore = new LocalStore("monujo")
   app.config.globalProperties.$auth = authService
   app.config.globalProperties.$prefs = prefsService
-  app.config.globalProperties.$export = new ExportService(gettext)
+  app.config.globalProperties.$export = exportService
   app.config.globalProperties.$qrCode = new QrCodeService(gettext)
   app.config.globalProperties.$errorHandler = app.config.errorHandler
   app.config.globalProperties.$appInfo = { appName, appVersion }
   app.config.globalProperties.$modal = modal
+  app.config.globalProperties.$dropdownMenu = dropdown
   app.config.globalProperties.$passwordUtils = passwordUtils
   app.config.globalProperties.$platform = Capacitor.getPlatform()
   const unwatch = store.watch(
