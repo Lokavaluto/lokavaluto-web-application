@@ -492,6 +492,7 @@
                 { label: this.$gettext("Add"), id: "add" },
                 { label: this.$gettext("Later"), id: "later" },
               ],
+              showPopupOnClose: false,
             })
             .then(async (result: any) => {
               if (result === "later") return

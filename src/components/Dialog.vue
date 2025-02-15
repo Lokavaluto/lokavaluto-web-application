@@ -62,10 +62,12 @@
 
       cancelInput(error?: any) {
         this.hide()
-        this.$msg.warning(this.$gettext("Operation canceled"))
-        this.callbacks.reject(
-          error || new Error("User canceled the dialog box")
-        )
+        if (this.opts?.showPopupOnClose) {
+          this.$msg.warning(this.$gettext("Operation canceled"))
+          this.callbacks.reject(
+            error || new Error("User canceled the dialog box")
+          )
+        }
       },
 
       hide() {

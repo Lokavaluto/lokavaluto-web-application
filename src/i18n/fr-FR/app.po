@@ -22,7 +22,7 @@ msgstr ""
 msgid "%{ appName } version %{ appVersion }"
 msgstr "%{ appName } version %{ appVersion }"
 
-#: src/components/MoneyTransferModal.vue:507
+#: src/components/MoneyTransferModal.vue:508
 msgid "%{ name } was added to your favorite list"
 msgstr "%{ name } a bien été ajouté en favori"
 
@@ -589,7 +589,7 @@ msgstr "Pas encore adhérent ?"
 msgid "Ok"
 msgstr "Ok"
 
-#: src/components/AuthChallenge.vue:68 src/components/Dialog.vue:65
+#: src/components/AuthChallenge.vue:68 src/components/Dialog.vue:66
 msgid "Operation canceled"
 msgstr "Opération annulée"
 
