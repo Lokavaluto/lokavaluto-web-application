@@ -44,7 +44,6 @@ describe("General processes when logged in", () => {
 
     cy.payButton().should("be.visible")
     cy.requestButton().should("be.visible")
-    cy.topUpButton().should("be.visible")
     cy.refreshButton().should("be.visible")
     if (Cypress.env("screenshot")) cy.takeScreenshot("dashboard")
   })
@@ -85,59 +84,73 @@ describe("General processes when logged in", () => {
       cy.contains(".account-backend", "comchain").parents(".account").click()
     })
 
-    cy.get("#topup-loading-spinner").should("not.exist")
+    // Ensure at least the pay button is there to assume that
+    // the footer is available and allow quick ``querySelectorAll()``
+    // method to speed things up regarding if we need to do this
+    // test or not... as some configuration can remove the topup
+    // process entirely.
+    cy.payButton().should("be.visible")
 
-    // remove pending top-up if exist
-    // We need to get the body to use the ``find`` method
-    cy.get("body").then((body) => {
-      // We use ``find`` here to check for existence without triggering
-      // an error in cypress and conditionally delete it if present.
-      if (body.find("#pending-top-up-list").length > 0) {
-        cy.get("#pending-top-up-list") // is guaranteed to succeed
-          .should("be.visible")
-          .then(() => {
-            cy.get(".pending-top-up-item").first().click()
-            cy.get("footer > div > #delete").click()
-            cy.get("#pending-top-up-list").should("not.exist")
-          })
+    cy.document().then((doc: any) => {
+      const elements = doc.querySelectorAll("button.is-top-up")
+      if (elements.length) {
+        cy.get("#topup-loading-spinner").should("not.exist")
+
+        // remove pending top-up if exist
+        // We need to get the body to use the ``find`` method
+        cy.get("body").then((body) => {
+          // We use ``find`` here to check for existence without triggering
+          // an error in cypress and conditionally delete it if present.
+          if (body.find("#pending-top-up-list").length > 0) {
+            cy.get("#pending-top-up-list") // is guaranteed to succeed
+              .should("be.visible")
+              .then(() => {
+                cy.get(".pending-top-up-item").first().click()
+                cy.get("footer > div > #delete").click()
+                cy.get("#pending-top-up-list").should("not.exist")
+              })
+          }
+        })
+
+        cy.topUpButton().should("be.visible")
+
+        // click top-up button
+        cy.topUpButton().click()
+        cy.amountInput().should("be.visible")
+
+        // enter invalid amount
+        cy.amountInput().type("test invalid amount")
+        cy.topUpNextButton().should("be.disabled")
+
+        // enter valid amount
+        cy.amountInput().type("30")
+        if (Cypress.env("screenshot")) cy.takeScreenshot("top-up")
+        cy.topUpNextButton().click()
+
+        // check confirmation modal
+        // by clicking on the top-up element
+        cy.get("header.topup").should("be.visible")
+        cy.closeModal()
+
+        // by clicking on the top-up button in the footer
+        cy.topUpButton().click()
+        cy.topUpModalWarningText().should("be.visible")
+        cy.topUpModalButtons().should("have.length", 3)
+        cy.closeModal()
+
+        // back to dashboard and check pending top-up
+        cy.getPendingTopUpList().should("be.visible")
+        cy.getPendingTopUpElement().click()
+
+        // withdraw top-up
+        cy.get("footer > div > #delete").click()
+
+        // check pending top-up empty
+        cy.get("#pending-top-up-list").should("not.exist")
+      } else {
+        cy.log("Top-up feature not tested as button is not displayed")
       }
     })
-
-    cy.topUpButton().should("be.visible")
-
-    // click top-up button
-    cy.topUpButton().click()
-    cy.amountInput().should("be.visible")
-
-    // enter invalid amount
-    cy.amountInput().type("test invalid amount")
-    cy.topUpNextButton().should("be.disabled")
-
-    // enter valid amount
-    cy.amountInput().type("30")
-    if (Cypress.env("screenshot")) cy.takeScreenshot("top-up")
-    cy.topUpNextButton().click()
-
-    // check confirmation modal
-    // by clicking on the top-up element
-    cy.get("header.topup").should("be.visible")
-    cy.closeModal()
-
-    // by clicking on the top-up button in the footer
-    cy.topUpButton().click()
-    cy.topUpModalWarningText().should("be.visible")
-    cy.topUpModalButtons().should("have.length", 3)
-    cy.closeModal()
-
-    // back to dashboard and check pending top-up
-    cy.getPendingTopUpList().should("be.visible")
-    cy.getPendingTopUpElement().click()
-
-    // withdraw top-up
-    cy.get("footer > div > #delete").click()
-
-    // check pending top-up empty
-    cy.get("#pending-top-up-list").should("not.exist")
   })
 })
 
