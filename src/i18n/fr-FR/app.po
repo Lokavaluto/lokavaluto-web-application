@@ -8,7 +8,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: src/components/AboutModal.vue:67
+#: src/components/AboutModal.vue:70
 msgid ""
 "%{ appName } is designed by %{ organizationName } an association whose goal "
 "is to develop, implement, and support the deployment of evolving and open-"
@@ -18,7 +18,7 @@ msgstr ""
 "%{ appName } a été conçu par %{ organizationName }, une association "
 "développant des outils open-source pour les acteurs de l'économie locale."
 
-#: src/components/AboutModal.vue:58
+#: src/components/AboutModal.vue:61
 msgid "%{ appName } version %{ appVersion }"
 msgstr "%{ appName } version %{ appVersion }"
 
@@ -38,7 +38,7 @@ msgid_plural "%{ pinLength } digits"
 msgstr[0] "%{ pinLength } chiffre"
 msgstr[1] "%{ pinLength } chiffres"
 
-#: src/components/AboutModal.vue:82 src/components/TheNavBar.vue:108
+#: src/components/AboutModal.vue:85 src/components/TheNavBar.vue:108
 #: src/components/TheNavBar.vue:140
 msgid "About %{ appName }"
 msgstr "À propos de %{ appName }"
@@ -77,13 +77,13 @@ msgstr "Ajouter aux favoris"
 msgid "Admin Comchain"
 msgstr "Administrateur Comchain"
 
-#: src/components/TransactionListModal.vue:117
-#: src/components/TransactionListModal.vue:122
+#: src/components/TransactionListModal.vue:121
+#: src/components/TransactionListModal.vue:126
 msgid "All recipient"
 msgstr "Tous les destinataires"
 
-#: src/components/TransactionListModal.vue:35
-#: src/components/TransactionListModal.vue:7
+#: src/components/TransactionListModal.vue:11
+#: src/components/TransactionListModal.vue:39
 msgid "All transactions"
 msgstr "Toutes les opérations"
 
@@ -92,7 +92,7 @@ msgid "Already have an account ?"
 msgstr "Avez-vous déjà créé un compte ?"
 
 #: src/components/MoneyTransaction.vue:26
-#: src/components/TransactionListModal.vue:438
+#: src/components/TransactionListModal.vue:447
 #: src/views/admin/PendingCredits.vue:43
 msgid "Amount"
 msgstr "Montant"
@@ -113,7 +113,7 @@ msgstr "Le montant envoyé doit être un nombre positif"
 msgid "Amount to send must be a number with not more than 2 decimals"
 msgstr "Le montant envoyé doit être un nombre n'ayant pas plus de 2 décimales"
 
-#: src/components/TransactionListModal.vue:483
+#: src/components/TransactionListModal.vue:492
 msgid "An error occured while creating the CSV file"
 msgstr "Une erreur est survenue lors de la creation du ficher CSV"
 
@@ -125,7 +125,7 @@ msgstr "Il y a eu un problème lors de la recherche du destinataire"
 msgid "An error occurred while adding to favorites."
 msgstr "Une erreur est survenue lors de la mise en favoris."
 
-#: src/components/ConfirmPaymentModal.vue:327
+#: src/components/ConfirmPaymentModal.vue:330
 msgid ""
 "An error occurred while deleting top-up request, please try again or contact "
 "an administrator"
@@ -144,14 +144,14 @@ msgstr ""
 "crédit de %{ name }"
 
 #: src/components/MoneyTransferModal.vue:245
-#: src/components/TransactionListModal.vue:337
+#: src/components/TransactionListModal.vue:342
 msgid "An unexpected issue occured while downloading recipient list"
 msgstr ""
 "Il y a eu un problème lors de la tentative de téléchargement de la liste des "
 "destinataires"
 
-#: src/components/TransactionListModal.vue:352
-#: src/components/TransactionListModal.vue:409
+#: src/components/TransactionListModal.vue:357
+#: src/components/TransactionListModal.vue:418
 #: src/components/TransactionListRecent.vue:118
 msgid "An unexpected issue occured while downloading transaction list"
 msgstr ""
@@ -251,7 +251,7 @@ msgstr ""
 "Il y a eu un problème lors de la tentative de téléchargement de la liste des "
 "demandes de rechargement"
 
-#: src/components/ConfirmPaymentModal.vue:256
+#: src/components/ConfirmPaymentModal.vue:259
 msgid "An unexpected server error occurred while fetching pending topup list"
 msgstr ""
 "Il y a eu un problème lors de la tentative de téléchargement de la liste des "
@@ -317,12 +317,12 @@ msgstr "Fermer"
 msgid "configure PIN code"
 msgstr "Configurer le code PIN"
 
-#: src/components/TransactionListModal.vue:64
-#: src/components/TransactionListModal.vue:66
-#: src/components/TransactionListModal.vue:71
-#: src/components/TransactionListModal.vue:80
-#: src/components/TransactionListModal.vue:82
-#: src/components/TransactionListModal.vue:96
+#: src/components/TransactionListModal.vue:100
+#: src/components/TransactionListModal.vue:68
+#: src/components/TransactionListModal.vue:70
+#: src/components/TransactionListModal.vue:75
+#: src/components/TransactionListModal.vue:84
+#: src/components/TransactionListModal.vue:86
 msgid "confirm"
 msgstr "valider"
 
@@ -351,12 +351,12 @@ msgstr "Demandes de crédit"
 msgid "Dashboard"
 msgstr "Tableau de bord"
 
-#: src/components/TransactionListModal.vue:439
+#: src/components/TransactionListModal.vue:448
 #: src/views/admin/PendingCredits.vue:46
 msgid "Date"
 msgstr "Date"
 
-#: src/components/TransactionListModal.vue:305
+#: src/components/TransactionListModal.vue:310
 msgid "day"
 msgstr "jour"
 
@@ -364,7 +364,7 @@ msgstr "jour"
 msgid "Delete"
 msgstr "Supprimer"
 
-#: src/components/TransactionListModal.vue:440
+#: src/components/TransactionListModal.vue:449
 msgid "Description"
 msgstr "Description"
 
@@ -382,11 +382,11 @@ msgstr "Annuler"
 msgid "Do you want to add %{ name } to your favorite list ?"
 msgstr "Voulez vous ajouter %{ name } aux favoris ?"
 
-#: src/components/TransactionListModal.vue:236
+#: src/components/TransactionListModal.vue:241
 msgid "Download"
 msgstr "Télécharger"
 
-#: src/components/TransactionListModal.vue:222
+#: src/components/TransactionListModal.vue:227
 msgid "Download transactions"
 msgstr "Télécharger les opérations"
 
@@ -542,7 +542,7 @@ msgstr "Montant minimum à créditer : "
 msgid "Money reconversion"
 msgstr "Reconversion"
 
-#: src/components/TransactionListModal.vue:307
+#: src/components/TransactionListModal.vue:312
 msgid "month"
 msgstr "mois"
 
@@ -584,12 +584,12 @@ msgstr "Aucun destinataire de paiement à afficher"
 msgid "No top up request awaiting approval"
 msgstr "Aucune demande de crédit en attente de validation"
 
-#: src/components/TransactionListModal.vue:178
-#: src/components/TransactionListModal.vue:188
+#: src/components/TransactionListModal.vue:183
+#: src/components/TransactionListModal.vue:193
 msgid "No transaction found"
 msgstr "Aucune transaction à afficher"
 
-#: src/components/TransactionListModal.vue:206
+#: src/components/TransactionListModal.vue:211
 msgid "No transactions found"
 msgstr "Aucune transaction à afficher"
 
@@ -602,7 +602,7 @@ msgstr "Pas encore adhérent ?"
 msgid "Ok"
 msgstr "Ok"
 
-#: src/components/AuthChallenge.vue:68 src/components/Dialog.vue:65
+#: src/components/AuthChallenge.vue:68
 msgid "Operation canceled"
 msgstr "Opération annulée"
 
@@ -739,7 +739,7 @@ msgstr "Code QR"
 msgid "QR code - Payment request to %{ name } of %{ amount } %{ currency }"
 msgstr "Code QR - demande de paiement à %{ name } de %{ amount } %{ currency }"
 
-#: src/components/QrCodeModal.vue:72
+#: src/components/QrCodeModal.vue:75
 msgid "QR code wallet - %{name}"
 msgstr "Code QR portefeuille - %{ name }"
 
@@ -828,11 +828,11 @@ msgstr "Préférences de sécurité"
 msgid "See more"
 msgstr "Voir tout"
 
-#: src/components/TransactionListModal.vue:108
+#: src/components/TransactionListModal.vue:112
 msgid "Select recipient:"
 msgstr "Sélectionnez un destinataire :"
 
-#: src/components/TransactionListModal.vue:26
+#: src/components/TransactionListModal.vue:30
 msgid "Select timespan:"
 msgstr "Sélectionnez un intervalle de temps :"
 
@@ -876,11 +876,11 @@ msgstr ""
 "pas déroulée correctement... Veuillez ré-éssayer dans l'écran de préférences "
 "ou contacter votre administrateur"
 
-#: src/components/TransactionListModal.vue:255
+#: src/components/TransactionListModal.vue:260
 msgid "Share"
 msgstr "Partager"
 
-#: src/components/TransactionListModal.vue:241
+#: src/components/TransactionListModal.vue:246
 msgid "Share transactions"
 msgstr "Partager les opérations"
 
@@ -904,11 +904,11 @@ msgstr "Créer un compte"
 msgid "Simplified authentication for this device"
 msgstr "Authentification simplifiée sur ce périphérique"
 
-#: src/components/TransactionListModal.vue:436
+#: src/components/TransactionListModal.vue:445
 msgid "Source"
 msgstr "Source"
 
-#: src/components/TransactionListModal.vue:437
+#: src/components/TransactionListModal.vue:446
 msgid "Target"
 msgstr "Destination"
 
@@ -983,11 +983,11 @@ msgid "The password and the password confirmation must be equal."
 msgstr ""
 "Le mot de passe et la confirmation du mot de passe doivent être identiques."
 
-#: src/components/ConfirmPaymentModal.vue:335
+#: src/components/ConfirmPaymentModal.vue:338
 msgid "The top-up request has been successfully deleted"
 msgstr "Votre demande de rechargement a été supprimée"
 
-#: src/components/ConfirmPaymentModal.vue:275
+#: src/components/ConfirmPaymentModal.vue:278
 msgid "The Top-up request has been successfully payed"
 msgstr "Votre demande de rechargement a été traitée avec succès"
 
@@ -1080,24 +1080,24 @@ msgstr "Rechargement demandé"
 msgid "Transaction details"
 msgstr "Détails de l'opération"
 
-#: src/components/TransactionListModal.vue:522
+#: src/components/TransactionListModal.vue:531
 msgid "Transaction list"
 msgstr "Liste des opérations"
 
-#: src/components/TransactionListModal.vue:493
-#: src/components/TransactionListModal.vue:528
+#: src/components/TransactionListModal.vue:502
+#: src/components/TransactionListModal.vue:537
 msgid "Transaction list could not be downloaded"
 msgstr "La liste des transactions n'a pas pu être téléchargée"
 
-#: src/components/TransactionListModal.vue:498
+#: src/components/TransactionListModal.vue:507
 msgid "Transaction list downloaded"
 msgstr "Liste des transactions téléchargée"
 
-#: src/components/TransactionListModal.vue:515
+#: src/components/TransactionListModal.vue:524
 msgid "Transaction list from %{ dateBeginStr } to %{ dateEndStr }"
 msgstr "Liste des transactions du %{ dateBeginStr } au %{ dateEndStr }"
 
-#: src/components/TransactionListModal.vue:533
+#: src/components/TransactionListModal.vue:542
 msgid "Transaction list shared"
 msgstr "Liste des transactions partagée"
 
@@ -1222,7 +1222,7 @@ msgstr "Export du portefeuille"
 msgid "Wallet registration unexpectedly failed"
 msgstr "Création de compte interrompue inopinément."
 
-#: src/components/TransactionListModal.vue:306
+#: src/components/TransactionListModal.vue:311
 msgid "week"
 msgstr "semaine"
 
@@ -1234,7 +1234,7 @@ msgstr ""
 "Souhaitez-vous vous logger en utilisant les capacités biométriques de votre "
 "périphérique (empreinte digitale, reconnaissance faciale, ...)"
 
-#: src/components/TransactionListModal.vue:308
+#: src/components/TransactionListModal.vue:313
 msgid "year"
 msgstr "année"
 

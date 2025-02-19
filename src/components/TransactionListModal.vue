@@ -1,5 +1,9 @@
 <template>
-  <div class="modal is-active" v-if="$modal.modal.value == $options.name">
+  <div
+    class="modal is-active"
+    v-if="$modal.modal.value == $options.name"
+    ref="transactions"
+  >
     <div class="modal-background"></div>
     <div class="modal-card">
       <header class="modal-card-head">
@@ -121,6 +125,7 @@
                   v-model="selectedRecipientIdx"
                   :placeholder="$gettext('All recipient')"
                   @searchchange="onRecipientSearch"
+                  id="recipientSelector"
                 >
                 </model-list-select>
               </div>
@@ -357,6 +362,7 @@
       })
     },
     async mounted() {
+      this.setFocus()
       const $recipients = this.$el.querySelector(".menu")
 
       $recipients.addEventListener(
@@ -394,6 +400,9 @@
       ...mapGetters(["numericFormat", "dateFormat"]),
     },
     methods: {
+      setFocus() {
+        this.$refs.transactions.focus()
+      },
       async createCsvFile() {
         const transactions = []
         const [dateBegin, dateEnd] = this.exportDate

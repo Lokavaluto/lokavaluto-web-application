@@ -1,5 +1,5 @@
 <template>
-  <div class="modal is-active">
+  <div class="modal is-active" ref="about">
     <div class="modal-background"></div>
     <div class="modal-card">
       <header class="modal-card-head">
@@ -43,6 +43,9 @@
 
   @Options({
     name: "AboutModal",
+    mounted() {
+      this.$refs.about.focus()
+    },
     computed: {
       replacements() {
         return {

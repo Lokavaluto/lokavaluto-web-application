@@ -62,6 +62,9 @@
     components: {
       QrCodeVue,
     },
+    mounted() {
+      this.$refs.qrCode.focus()
+    },
     computed: {
       ...mapModuleState("lokapi", ["userProfile"]),
     },

@@ -1,5 +1,5 @@
 <template>
-  <div class="modal is-active">
+  <div class="modal is-active" ref="paymentConfirmation">
     <div class="modal-background"></div>
     <div class="modal-card">
       <header class="modal-card-head" :class="$modal.args?.value[0].type">
@@ -202,6 +202,9 @@
 
   @Options({
     name: "ConfirmPaymentModal",
+    mounted() {
+      this.$refs.paymentConfirmation.focus()
+    },
     computed: {
       ...mapGetters(["numericFormat"]),
       ...mapModuleState("lokapi", ["userProfile"]),

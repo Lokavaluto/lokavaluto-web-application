@@ -1,5 +1,10 @@
 <template>
-  <component v-for="modal in $modal.modals.value" :is="modal" />
+  <component
+    v-for="modal in $modal.modals.value"
+    :is="modal"
+    tabindex="0"
+    @keyup.esc="$modal.close()"
+  />
 </template>
 <script lang="ts">
   import { Options, Vue } from "vue-class-component"
