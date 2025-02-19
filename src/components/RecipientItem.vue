@@ -1,9 +1,10 @@
 <template>
   <div class="is-flex is-justify-content-flex-start" v-if="recipient">
     <div
-      class="pr-3 is-clickable is-align-items-center is-flex"
+      class="is-clickable is-align-items-center is-flex recipient-icon"
       :class="[recipient.is_favorite ? 'is-active' : '']"
-      @click="recipient.toggleFavorite()"
+      @click="toggleFavorite()"
+      id="toggle-fav"
     >
       <span class="icon">
         <fa-icon
@@ -12,7 +13,11 @@
         />
       </span>
     </div>
-    <div class="recipient-name is-size-5" @click="$emit('select', recipient)">
+    <div
+      pl-3
+      class="recipient-name is-size-5"
+      @click="$emit('select', recipient)"
+    >
       {{ recipient.name }}
       <div v-if="recipient.markBackend" class="is-size-6 has-text-grey-light">
         {{ `${recipient.backendId}` }}
@@ -24,6 +29,11 @@
 <script lang="ts">
   import { Options, Vue } from "vue-class-component"
 
+  import { showSpinnerMethod, replaceWithLoader } from "@/utils/showSpinner"
+  import { debounceMethod } from "@/utils/debounce"
+  import applyDecorators from "@/utils/applyDecorators"
+  import { UIError } from "@/exception"
+
   import moment from "moment"
 
   @Options({
@@ -31,11 +41,36 @@
     props: {
       recipient: Object,
     },
+    methods: {
+      toggleFavorite: applyDecorators(
+        [
+          debounceMethod,
+          showSpinnerMethod(function (this: any) {
+            return replaceWithLoader.apply(this, ["#toggle-fav", "1.5em"])
+          }),
+        ],
+        async function (this: any): Promise<void> {
+          try {
+            await this.recipient.toggleFavorite()
+          } catch (err: any) {
+            throw new UIError(
+              this.$gettext(
+                "An unexpected issue occurred while adding this recipient to your favorit list"
+              ),
+              err
+            )
+          }
+        }
+      ),
+    },
   })
   export default class RecipientItem extends Vue {}
 </script>
 <style lang="scss" scoped>
   .recipient-name {
     width: 100%;
+  }
+  .recipient-icon {
+    position: relative;
   }
 </style>
