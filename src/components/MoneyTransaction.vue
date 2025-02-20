@@ -20,11 +20,30 @@
         <h2 class="frame3-sub-title mb-3">
           {{ $gettext("To") }}
         </h2>
-        <RecipientItem :recipient="selectedRecipient" />
+        <RecipientItem
+          v-if="selectedRecipient"
+          :recipient="selectedRecipient"
+        />
       </div>
       <h2 class="frame3-sub-title mt-3 mb-3">
         {{ $gettext("Amount") }}
       </h2>
+      <div
+        v-if="transactionType === 'topup' && account?.minCreditAmount"
+        class="ml-2 min-credit-amount"
+      >
+        {{ $gettext("Minimum credit amount: ") }}
+        {{ account?.minCreditAmount }}
+        {{ account?.curr || "" }}
+      </div>
+      <div
+        v-if="transactionType === 'topup' && account?.maxCreditAmount"
+        class="ml-2 min-credit-amount"
+      >
+        {{ $gettext("Maximum credit amount: ") }}
+        {{ account?.maxCreditAmount }}
+        {{ account?.curr || "" }}
+      </div>
       <div class="is-flex">
         <input
           v-model.number="amount"
@@ -50,7 +69,10 @@
       <div class="notification is-danger is-light" v-if="parentErrors">
         {{ parentErrors }}
       </div>
-      <div class="memo-container" v-if="transactionType !== 'reconversion'">
+      <div
+        class="memo-container"
+        v-if="transactionType !== 'reconversion' && transactionType !== 'topup'"
+      >
         <textarea
           @input="handleSenderMemoInput()"
           v-model="senderMemo"
@@ -205,15 +227,14 @@
             )
           return
         }
-
         const amountStrRaw = this.$refs.amountRequested.value
         const amountStr = this.amount.toString()
         // XXXvlab: this is the maximum size of a XXXX.YY that
         // is safely converted to a number in javascript. (We
         // can garantee that what the user typed in is
         // eauivalent to what we get in the code.
-        const maxValue = Number.MAX_SAFE_INTEGER / 2 ** 7
-        if (this.amount > maxValue) {
+        const maxValue = 2 ** 46
+        if (this.amount >= maxValue) {
           this.errors.amount = this.$gettext(
             "Amount to send is too large (<= %{ maxValue })",
             { maxValue }
