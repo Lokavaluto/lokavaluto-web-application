@@ -101,7 +101,7 @@ msgstr "Montant"
 msgid "Amount to request must be a number greater than 0"
 msgstr "Le montant demandé doit être un nombre positif"
 
-#: src/components/MoneyTransaction.vue:239
+#: src/components/MoneyTransaction.vue:238
 msgid "Amount to send is too large (<= %{ maxValue })"
 msgstr "Le montant envoyé est trop grand (<= %{ maxValue})"
 
@@ -109,7 +109,7 @@ msgstr "Le montant envoyé est trop grand (<= %{ maxValue})"
 msgid "Amount to send must be a number greater than 0"
 msgstr "Le montant envoyé doit être un nombre positif"
 
-#: src/components/MoneyTransaction.vue:250
+#: src/components/MoneyTransaction.vue:249
 msgid "Amount to send must be a number with not more than 2 decimals"
 msgstr "Le montant envoyé doit être un nombre n'ayant pas plus de 2 décimales"
 
@@ -968,8 +968,8 @@ msgstr ""
 msgid "The maximum top up amount must be equal or less than %{ amount }"
 msgstr "Le montant à créditer doit être égal ou inférieur à %{ amount }"
 
-#: src/components/MoneyTransaction.vue:273
-#: src/components/MoneyTransaction.vue:288
+#: src/components/MoneyTransaction.vue:272
+#: src/components/MoneyTransaction.vue:287
 msgid "the message description is too long"
 msgstr "Le message de description est trop long"
 
@@ -1125,7 +1125,7 @@ msgstr "Impossible de lire le code QR."
 msgid "Unavailable"
 msgstr "Indisponible"
 
-#: src/components/MoneyTransaction.vue:262
+#: src/components/MoneyTransaction.vue:261
 msgid ""
 "Unexpected amount received. Try to reenter your amount, and if the problem "
 "persists please contact your administator."
