@@ -15,58 +15,21 @@
       <section
         class="modal-card-body"
         tabindex="0"
-        @keyup.enter="amountError === false ? newLinkTab() : null"
+        @keyup.enter="
+          () => {
+            if (amountError === false && isValid) newLinkTab()
+          }
+        "
       >
-        <div
-          v-if="creditOrderUrl.length === 0 && $modal.step.value == 1"
-          class="custom-amount-input"
-        >
-          <div
-            v-show="
-              selectedCreditAccount || creditableMoneyAccounts.length === 1
-            "
-            class="amount custom-amount-input"
-          >
-            <h2 class="frame3-sub-title mt-3">
-              {{ $gettext("Top up amount") }}
-            </h2>
-            <div
-              v-if="selectedCreditAccount?.minCreditAmount"
-              class="ml-2 min-credit-amount"
-            >
-              {{ $gettext("Minimum credit amount: ") }}
-              {{ selectedCreditAccount?.minCreditAmount }}
-              {{ selectedCreditAccount?.curr || "" }}
-            </div>
-            <div
-              v-if="selectedCreditAccount?.maxCreditAmount"
-              class="ml-2 min-credit-amount"
-            >
-              {{ $gettext("Maximum credit amount: ") }}
-              {{ selectedCreditAccount?.maxCreditAmount }}
-              {{ selectedCreditAccount?.curr || "" }}
-            </div>
-            <div class="is-flex">
-              <input
-                v-model.number="amount"
-                ref="amountcredit"
-                type="number"
-                min="0"
-                class="input is-custom"
-                :placeholder="$gettext('e.g. 50')"
-                :class="{ 'is-danger': amountError }"
-              />
-              <span class="amount-currency-symbol pl-2">{{
-                this.selectedCreditAccount?.curr
-              }}</span>
-            </div>
-            <div>
-              <div class="notification is-danger is-light" v-if="amountError">
-                {{ amountError }}
-              </div>
-            </div>
-          </div>
-        </div>
+        <MoneyTransaction
+          directionTransfer="receive"
+          :account="this.$modal.args.value[0].account"
+          :parentErrors="amountError"
+          transactionType="topup"
+          @update:amount="(x) => (amount = x)"
+          @update:isValid="(x) => (isValid = x)"
+          @change="errors = false"
+        />
       </section>
       <footer
         class="
@@ -91,7 +54,7 @@
             "
             id="top-up-button"
             @click="newLinkTab()"
-            :disabled="amountError !== false"
+            :disabled="amountError !== false  !| !isValid"
           >
             {{ $gettext("Next") }}
           </button>
@@ -107,18 +70,24 @@
   import { debounceMethod } from "@/utils/debounce"
   import applyDecorators from "@/utils/applyDecorators"
 
+  import MoneyTransaction from "./MoneyTransaction.vue"
+
   @Options({
     name: "MoneyCreditModal",
+    components: {
+      MoneyTransaction,
+    },
     data() {
       return {
         creditOrderUrl: "",
         selectedCreditAccount: null,
         amount: "",
+        isValid: true,
+        errors: false,
       }
     },
     mounted() {
       ;(this.$el as HTMLElement).focus()
-      this.setFocus()
       this.resetCredit()
     },
     created() {
@@ -174,8 +143,6 @@
       newLinkTab: applyDecorators(
         [debounceMethod, showSpinnerMethod(".modal-card-body")],
         async function (this: any): Promise<void> {
-          // This to ensure we are left with 2 decimals only
-          this.amount = this.amount.toFixed(2)
           const { refreshTransaction, refreshAccounts, account } =
             this.$modal.args.value[0]
 
@@ -239,15 +206,6 @@
           })
         }
       ),
-      setFocus() {
-        this.$nextTick(() => {
-          if (this.$refs.amountcredit) {
-            this.$refs.amountcredit.value = null
-            this.$refs.amountcredit.focus()
-            this.$refs.amountcredit.select()
-          }
-        })
-      },
     },
   })
   export default class MoneyCreditModal extends Vue {}

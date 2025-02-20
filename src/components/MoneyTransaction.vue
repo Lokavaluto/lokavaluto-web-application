@@ -20,11 +20,30 @@
         <h2 class="frame3-sub-title mb-3">
           {{ $gettext("To") }}
         </h2>
-        <RecipientItem :recipient="selectedRecipient" />
+        <RecipientItem
+          v-if="selectedRecipient"
+          :recipient="selectedRecipient"
+        />
       </div>
       <h2 class="frame3-sub-title mt-3 mb-3">
         {{ $gettext("Amount") }}
       </h2>
+      <div
+        v-if="transactionType === 'topup' && account?.minCreditAmount"
+        class="ml-2 min-credit-amount"
+      >
+        {{ $gettext("Minimum credit amount: ") }}
+        {{ account?.minCreditAmount }}
+        {{ account?.curr || "" }}
+      </div>
+      <div
+        v-if="transactionType === 'topup' && account?.maxCreditAmount"
+        class="ml-2 min-credit-amount"
+      >
+        {{ $gettext("Maximum credit amount: ") }}
+        {{ account?.maxCreditAmount }}
+        {{ account?.curr || "" }}
+      </div>
       <div class="is-flex">
         <input
           v-model.number="amount"
@@ -50,7 +69,10 @@
       <div class="notification is-danger is-light" v-if="parentErrors">
         {{ parentErrors }}
       </div>
-      <div class="memo-container" v-if="transactionType !== 'reconversion'">
+      <div
+        class="memo-container"
+        v-if="transactionType !== 'reconversion' && transactionType !== 'topup'"
+      >
         <textarea
           @input="handleSenderMemoInput()"
           v-model="senderMemo"
