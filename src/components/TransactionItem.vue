@@ -37,6 +37,9 @@
         {{
           transaction.isTopUp ? $gettext("Top-up") : $gettext("Reconversion")
         }}
+        {{
+          transaction.isReconversion ? "(" + this.reconversionStatus + ")" : ""
+        }}
       </h5>
       <h4 v-else class="custom-card-related">
         {{ transaction.related }}
@@ -67,6 +70,21 @@
     computed: {
       ...mapGetters(["numericFormat", "relativeDateFormat", "dateFormat"]),
       ...mapModuleState("lokapi", ["userProfile"]),
+
+      reconversionStatus() {
+        switch (this.transaction?.isReconversion) {
+          case true:
+            return this.$gettext("sent")
+          case "received":
+            return this.$gettext("received")
+          case "invoiced":
+            return this.$gettext("invoiced")
+          case "paid":
+            return this.$gettext("processed")
+          default:
+            return false
+        }
+      },
     },
   })
   export default class TransactionItem extends Vue {}

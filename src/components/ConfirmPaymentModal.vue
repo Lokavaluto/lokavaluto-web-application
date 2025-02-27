@@ -32,22 +32,40 @@
               )
             }}
           </p>
-          <p class="custom-card-title has-text-weight-bold">
+          <div class="custom-card-title has-text-weight-bold">
+            <p v-if="reconversionStatus">
+              {{ $gettext("Reconversion") }}
+            </p>
+            <p v-else>
+              {{
+                {
+                  transactionDetail: $modal.args?.value[0].transaction.pending
+                    ? $gettext("Transaction sent")
+                    : $gettext("Transaction processed"),
+                  paymentConfirmation: $gettext("Payment sent"),
+                  topup: $gettext("Top-up requested"),
+                }[$modal.args?.value[0].type]
+              }}
+            </p>
+          </div>
+          <div class="has-text-weight-bold" v-if="reconversionStatus">
             {{
-              {
-                transactionDetail: $modal.args?.value[0].transaction.pending
-                  ? $gettext("Transaction sent")
-                  : $gettext("Transaction processed"),
-                paymentConfirmation: $gettext("Payment sent"),
-                topup: $gettext("Top-up requested"),
-                reconversion: $modal.args?.value[0].transaction.pending
-                  ? $gettext("Reconversion sent")
-                  : $gettext("Reconversion processed"),
-              }[$modal.args?.value[0].type]
+              $gettext("Your reconversion request has been  ") +
+              " " +
+              reconversionStatus
             }}
-          </p>
+            {{
+              $modal.args?.value[0].transaction.isReconversion !== "paid"
+                ? " " + $gettext("and will be processed soon")
+                : ""
+            }}
+          </div>
           <div
-            v-if="$modal.args?.value[0].type == 'topup'"
+            v-if="
+              $modal.args?.value[0].type == 'topup' ||
+              ($modal.args?.value[0].transaction.isReconversion !== false &&
+                $modal.args?.value[0].transaction.isReconversion !== 'paid')
+            "
             class="confirm-icon-container mb-2"
           >
             <fa-icon icon="plus-circle" class="confirm-icon fa-thin" />
@@ -227,6 +245,20 @@
           transactionType = "transactionDetail"
         }
         return transactionType
+      },
+      reconversionStatus() {
+        switch (this.$modal.args?.value[0].transaction?.isReconversion) {
+          case true:
+            return this.$gettext("sent")
+          case "received":
+            return this.$gettext("received")
+          case "invoiced":
+            return this.$gettext("invoiced")
+          case "paid":
+            return this.$gettext("processed")
+          default:
+            return false
+        }
       },
     },
     methods: {
