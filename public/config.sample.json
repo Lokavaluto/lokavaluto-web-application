@@ -78,5 +78,7 @@
   "transactionsRefreshInterval": 47,
   "disableReconversion": false,
   "disableTopUp": false,
-  "disableSplitMemo": false
+  "disableSplitMemo": false,
+  "disableBusinessStatusDisplays": false,
+  "isAdministrativeBackendSourceOfBusinessStatus": false
 }

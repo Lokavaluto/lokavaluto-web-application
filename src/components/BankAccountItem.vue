@@ -16,6 +16,21 @@
         <div v-if="isMultiCurrency && !isSub" class="account-backend is-size-6">
           {{ account?.backend }}
         </div>
+        <span
+          v-else-if="
+            !$config.disableBusinessStatusDisplay && !isSub && isBusinessAccount
+          "
+          class="
+            button
+            custom-button
+            is-pay is-rounded
+            action
+            account-type
+            ml-1
+          "
+        >
+          {{ $gettext("Pro") }}
+        </span>
       </div>
       <div class="is-align-items-center is-flex">
         <span
@@ -85,6 +100,25 @@
       isSub: Boolean,
       account: Object,
       showSubAccounts: Boolean,
+    },
+    data() {
+      return {
+        isBusinessAccount: false,
+      }
+    },
+    async mounted() {
+      try {
+        this.isBusinessAccount = await this.account?._obj.isBusinessAccount(
+          this.$config.isAdministrativeBackendSourceOfBusinessStatus
+        )
+      } catch (err: any) {
+        throw new UIError(
+          this.$gettext(
+            "An unexpected issue occurred while getting business account status"
+          ),
+          err
+        )
+      }
     },
     computed: {
       isTemporarilyUnavailable() {
@@ -168,5 +202,12 @@
   }
   .error-msg {
     font-style: italic;
+  }
+
+  .account-type {
+    width: 2.2rem;
+    height: 1.3rem;
+    margin-top: 0.4rem;
+    font-size: x-small;
   }
 </style>

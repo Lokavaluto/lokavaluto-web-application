@@ -197,6 +197,10 @@ msgstr ""
 "Il y a eu un problème lors de l'annulation de la demande d'activation de "
 "portefeuille pour l'utilisateur %{ name }"
 
+#: src/components/BankAccountItem.vue:116
+msgid "An unexpected issue occurred while getting business account status"
+msgstr "Il y a eu un problème lors du chargement du status du compte"
+
 #: src/components/TransactionListRecent.vue:15
 msgid ""
 "An unexpected issue occurred while loading the last transactions. Sorry for "
@@ -726,6 +730,10 @@ msgstr "Compte nantis"
 #: src/router/index.ts:56
 msgid "Preferences"
 msgstr "Préférences"
+
+#: src/components/BankAccountItem.vue:20
+msgid "Pro"
+msgstr "Pro"
 
 #: src/components/TheNavBar.vue:69
 msgid "Profile"
